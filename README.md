@@ -1,8 +1,38 @@
-# HSI — Hierarchical Self-Improvement for Hot-Swappable Agent Harnesses
+# HSI — Hierarchical Self-Improvement Agent Harness
 
-HSI is a Godel-style self-improvement framework in which a single frozen LLM $M$ operates across three layered scopes — **task harness**, **evolver**, and **meta-evolver** — to rewrite its own harness code, the strategy that governs the rewriting, and the selector that exports the final deployed version. A thinking-on/off design isolates the harness contribution: thinking is disabled at task time to cap the model's per-step ceiling, and enabled when rewriting the harness to give self-modification its best chance.
+**Tailin Zhou** · HKUST · `tzhouaq@connect.ust.hk`
 
-The frozen-backbone constraint rules out any system that recruits an external or stronger proposer. The only seam between scopes is message-history ownership: each scope is a memory boundary, not a separate agent.
+HSI is a framework in which a single frozen LLM $M$ operates across three layered scopes — **task harness**, **evolver**, and **meta-evolver** — to rewrite its own harness code, the strategy that governs the rewriting, and the selector that exports the final deployed version. The meta-evolver's own execution logic is frozen as an outer anchor, localizing self-modification to layered, empirically validated edits rather than unrestricted self-reference. A thinking-on/off design isolates the harness contribution: thinking is disabled at task time to cap the model's per-step ceiling, and enabled when rewriting the harness to give self-modification its best chance.
+
+On BALROG with DeepSeek-V4-Flash as the frozen backbone, HSI yields consistent in-distribution gains over the init-harness baseline on moderate-difficulty tasks (**+39.3** on BabyAI, **+33.0** on Crafter, **+25.0** on TextWorld, **+15.0** on MiniHack, all in raw % Progress), surpassing several frontier models on TextWorld (Grok-4, Claude-Opus-4.5-Thinking, Gemini-3-Flash) and Crafter (DeepSeek-R1, GPT-5-minimal-think, GPT-4o) despite a smaller backbone, and shows clean held-out generalization on easier BabaIsAI sub-suites (**0.98** best-test on BreakStop, **1.00** on GoTo from a 20% unseen split). On tasks beyond the backbone's reach (NLE), no harness redesign closes the gap.
+
+## Results
+
+### Setup A — In-distribution (resampled-seed, full-suite evolution)
+
+| LLM | BabyAI | Crafter | TextWorld | MiniHack | NLE | Avg |
+|---|---|---|---|---|---|---|
+| Gemini-3-Pro | 96.0 ± 2.8 | 57.3 ± 4.4 | 60.2 ± 7.5 | 40.0 ± 7.7 | 6.8 ± 3.2 | 52.1 ± 5.1 |
+| Grok-4 | 76.0 ± 6.0 | 57.3 ± 3.9 | 62.9 ± 7.9 | 17.5 ± 6.0 | 1.8 ± 0.8 | 43.1 ± 4.9 |
+| Claude-Opus-4.5-Thinking | 72.0 ± 6.3 | 48.6 ± 3.2 | 59.0 ± 8.0 | 30.0 ± 7.2 | 2.4 ± 0.3 | 42.4 ± 5.0 |
+| Gemini-3-Flash | 86.0 ± 4.9 | 45.0 ± 6.3 | 50.2 ± 8.1 | 30.0 ± 7.2 | 4.0 ± 0.8 | 43.0 ± 5.5 |
+| DeepSeek-R1 | 74.0 ± 6.2 | 36.4 ± 3.8 | 21.8 ± 6.1 | 25.0 ± 6.8 | 1.4 ± 0.5 | 31.7 ± 4.7 |
+| GPT-5-minimal-think | 80.0 ± 5.7 | 39.1 ± 4.1 | 30.6 ± 7.0 | 20.0 ± 7.3 | 1.3 ± 0.5 | 34.2 ± 4.9 |
+| GPT-4o | 77.6 ± 3.7 | 33.1 ± 2.3 | 39.3 ± 5.2 | 10.0 ± 4.7 | 0.4 ± 0.4 | 32.1 ± 3.3 |
+| **DS-V4-Flash (Init harness)** | 42.0 ± 3.5 | 11.6 ± 5.0 | 40.0 ± 6.2 | 0.8 ± 1.9 | 0.0 | 18.9 ± 3.3 |
+| **DS-V4-Flash w. HSI (meta-off)** | 77.3 ± 1.2 | 36.4 ± 1.6 | 46.0 ± 2.4 | 5.8 ± 3.8 | 0.0 | 33.1 ± 1.8 |
+| **DS-V4-Flash w. HSI (meta-on)** | **81.3 ± 4.2** | **44.6 ± 3.2** | **65.0 ± 3.0** | **15.8 ± 2.9** | **0.2 ± 0.3** | **41.4 ± 2.7** |
+
+Leaderboard numbers (retrieved 2026-08-03) reported as % Progress [Paglieri et al., 2025]. HSI rows use a single frozen DeepSeek-V4-Flash backbone.
+
+### Setup B — Held-out (sub-suite split, 20% unseen)
+
+| Sub-suite | Init (best-test) | HSI (best-test) |
+|---|---|---|
+| BreakStop | 0.90 | **0.98** |
+| GoTo | 0.93 | **1.00** |
+
+Clean held-out generalization on unseen tasks within the same task family.
 
 ## Pipeline
 
@@ -109,7 +139,6 @@ python main.py --resume evolution_results/balrog_babyai/run_<timestamp>
 
 The reward is the stochastic lower-confidence bound $r = \mu - z \cdot \sigma / \sqrt{n}$ with $z = 0.5$, computed per task across episodes then averaged across tasks.
 
-
 ## Output Structure
 
 Each run produces:
@@ -136,7 +165,18 @@ evolution_results/<suite>/run_<timestamp>/
 
 - **Not test-time search.** One candidate per iteration; no population-based parallel scaling. Population-level diversity is preserved via the commit pool, not via parallel rollouts.
 - **Not external-proposer.** The same frozen $M$ that executes the harness also rewrites it. The meta-evolver's own execution logic is loaded from `godel_evolution_init/` and is never edited by the agent.
-- **Not universal.** Harness evolution is bounded by the backbone's intellectual ceiling. On tasks beyond that ceiling (e.g. NLE under DeepSeek-V4-Flash-Preview), no harness redesign closes the gap. This is consistent with the VC-dimension limit on self-improving agents.
+- **Not universal.** Harness evolution is bounded by the backbone's intellectual ceiling. On tasks beyond that ceiling (e.g. NLE under DeepSeek-V4-Flash), no harness redesign closes the gap. This is consistent with the VC-dimension limit on self-improving agents.
+
+## Citation
+
+```bibtex
+@article{zhou2026hsi,
+  title={Hierarchical Self-Improvement Agent Harness},
+  author={Zhou, Tailin},
+  journal={NeurIPS},
+  year={2026}
+}
+```
 
 ## License
 

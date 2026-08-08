@@ -1,0 +1,100 @@
+# Balrog BabaIsAI Advanced Benchmark Configuration
+# Usage: python main.py benchmark_config_goal/balrog_babaisai_advanced/config.yaml
+
+llm:
+  model: "deepseek-v4-flash"
+  # model: "qwen36-fast"
+  temperature: 0.0
+  thinking_enabled: true            # true enables thinking mode, false disables
+  reasoning_effort: "max"         # thinking effort: "high", "max"
+
+evolution:
+  lcb_zscore: 0.5  # LCB (lower confidence bound) z-score: larger is more conservative, penalizes unstable reward estimates; 0 = degrades to raw mean
+  max_iterations: 5           # number of evolution iterations
+  max_steps_per_iteration: 80    # max steps per iteration
+  enable_bash: true
+  max_context_tokens: 600000
+  max_history_messages: 500
+  max_tool_result_length: 100000
+  evaluate_llm_summary: true
+  evaluate_consolidate_summary: false
+  init_eval_enabled: false  # run a dev evaluation of the init harness before evolution (produces experience text + true baseline reward); false=skip, iteration-1 cold start
+  enable_file_log: true
+  exclude_tools:
+    - read_history_self
+    - get_historic_version
+    - view_evolution_graph
+    - get_historic_eval_code
+    # - bootstrap
+
+harness:
+  enable_bash: false
+  temperature: 0.0  # LLM temperature during harness/evaluate phase (follows llm.temperature if unset)
+  thinking_enabled: false  # thinking mode during harness/evaluate phase (follows llm.thinking_enabled if unset)
+  # max_tokens: 1024  # max_tokens during harness phase (no limit if unset; recommend a small value to avoid wasting tokens per step)
+
+init:
+  godel_harness_init_path: "./godel_harness_init/balrog_babaisai"
+  godel_evolution_init_path: "./godel_evolution_init"
+
+meta_evolve:
+  # iter_per_metaevolve: 2
+  enabled: true
+  max_steps: 50
+  enable_bash: true
+  # archive_strategy: "recursive"
+  archive_strategy: "greedy"
+  inject_seed_hypothesis: true
+  seed_eval_enabled: true
+  seed_eval_max_calls: 3
+  # archive_strategy: "crossover"
+  evolvable_commit_strategy: true
+  commit_nudge_max_steps: 50
+  seed_selection_max_steps: 50
+  # Submit-best -- fixed, non-evolvable agentic final-best selection stage
+  submit_best_enabled: true
+  submit_best_max_steps: 80
+
+output:
+  directory: "./evolution_results/balrog_babaisai_advanced"
+  verbose: true
+
+# ============================================================
+# Benchmark common configuration
+# ============================================================
+benchmark:
+  type: "balrog"
+  suite: "babaisai_advanced"
+
+  max_tasks_per_category: null
+  max_tasks_per_category_test: null
+
+  verbose: false
+  dev_ratio: 1.0                  # all for dev (only 3 tasks, no test/val split)
+  split_seed: 66                  # random seed, ensures dev/test split is reproducible
+  val_ratio: 0.0                  # no val split (too few tasks)
+  mode: "batch"
+  dynamic_sample: false            # true=resample dev on each evaluate (val/test fixed in advance), false=dev/val/test all fixed
+  parallel_workers: 40             # number of parallel evaluation threads (1=sequential, default)
+  run_all_tasks: true           # run full evaluation (dev+val+test) after evolution; default false only runs test set
+  test_repeats: 1  # increase to run more times; set to 1 for debugging
+
+# ============================================================
+# Balrog-specific configuration
+# ============================================================
+balrog:
+  seed: 42
+  max_steps_per_episode_dev: null       # dev set (fast iteration)
+  max_steps_per_episode_non_dev: null  # val/test uses environment default step count
+  feedback_on_invalid_action: true
+  # failed_threshold: -1 = adaptive (starts at first eval result, raises by margin)
+  # any value >= 0 = static threshold
+  failed_threshold: 1
+  # adaptive_threshold_margin: 0.05  # fixed increment when agent beats threshold
+  episode_workers: 5       # number of parallel episode evaluations per task
+  num_episodes:
+    babaisai_advanced: 5                # default 5
+  # Episode count for dev/val exploration phase (effective in dev and val modes): cheap discovery, noise handled by final evaluation.
+  # Unlisted envs → dev/val also use num_episodes. test/final evaluation always uses the num_episodes above.
+  num_episodes_dev:
+    babaisai_advanced: 1

@@ -1,0 +1,120 @@
+# Balrog Benchmark Configuration
+# Usage: cp benchmark_config_goal/balrog/config.yaml config.yaml && python main.py
+#
+# All tunable parameters are here for easy debugging
+
+llm:
+  model: "GLM-4.7"
+  temperature: 1
+
+evolution:
+  max_iterations: 4              # number of evolution iterations
+  max_steps_per_iteration: 30    # max steps per iteration
+  enable_bash: true
+  max_context_tokens: 68000
+  max_history_messages: 100
+  max_tool_result_length: 100000
+  evaluate_llm_summary: false
+  evaluate_consolidate_summary: false
+  enable_file_log: true
+  exclude_tools:
+    - read_history_self
+    - get_historic_version
+    - view_evolution_graph
+    - bootstrap
+
+harness:
+  enable_bash: false
+
+init:
+  godel_harness_init_path: "./godel_harness_init/balrog"
+  godel_evolution_init_path: "./godel_evolution_init"
+
+meta_evolve:
+  enabled: true
+  max_steps: 20
+  enable_bash: true
+  archive_enabled: true
+  archive_strategy: "recursive"
+  inject_seed_hypothesis: true
+  seed_eval_enabled: false
+  seed_eval_max_calls: 1
+
+output:
+  directory: "./evolution_results/balrog"
+  verbose: true
+
+# ============================================================
+# Benchmark common configuration
+# ============================================================
+benchmark:
+  type: "balrog"
+
+  # suite: select environments to test, hyphen-separated, or "all" for everything
+  #   "babyai"              → only BabyAI (5 tasks)
+  #   "nle"                 → only NetHack (1 task)
+  #   "minihack"            → only MiniHack (8 tasks)
+  #   "crafter"             → only Crafter (1 task)
+  #   "textworld"           → only TextWorld (3 tasks)
+  #   "babaisai"            → only BabaIsAI (40 tasks)
+  #   "babyai-crafter"      → BabyAI + Crafter
+  #   "all"                 → all 6 environments (58 tasks)
+  suite: "crafter"
+
+  # max_tasks_per_category: per-task cap for dev/val sets (null=all)
+  # e.g. setting to 1 runs only the first task in each environment, suitable for quick debugging
+  max_tasks_per_category: null
+  # max_tasks_per_category_test: per-task cap for test set (null=all, independent of dev/val)
+  max_tasks_per_category_test: null
+
+  verbose: true
+  dev_ratio: 0.8               # 1.0 = all for dev, no test set split
+  split_seed: 42
+  val_ratio: 0.25
+  mode: "batch"
+  # run_all_tasks: true           # run full evaluation (dev+val+test) after evolution; default false only runs test set
+
+# ============================================================
+# Balrog-specific configuration
+# These parameters are read by BalrogConfig.from_benchmark_config()
+# ============================================================
+balrog:
+
+  # Max step cap per episode (null = use environment default)
+  # BabyAI default ~100 steps, NLE default 100000 steps, Crafter default 2000 steps
+  # Reducing can greatly cut LLM call count, suitable for debugging
+  max_steps_per_episode: null
+
+  # Whether to prepend a warning to the observation text when the agent outputs an invalid action
+  feedback_on_invalid_action: true
+
+  # Task failure threshold: avg_progression < this value is considered failed; logs are returned to the agent
+  # 0.0 = original behavior (only progression==0 counts as failed)
+  # Recommended value: 0.1 ~ 0.2
+  failed_threshold: 1
+
+  # How many episodes to run per (env, task), then average progression
+  # Smaller values verify the pipeline faster; larger values give more stable scores
+  num_episodes:
+    babyai: 2                   # default 10; debugging 1~2 recommended
+    nle: 1                      # default 5
+    minihack: 1                 # default 5
+    crafter: 2                  # default 10
+    textworld: 1                # default 10
+    babaisai: 1                 # default 3
+
+  # Environment parameter overrides (merged onto defaults)
+  # Only write fields to override; unspecified fields keep defaults
+  env_kwargs:
+    # babyai:
+    #   num_dists: 0              # number of distractors (0=none)
+    # nle:
+    #   max_episode_steps: 1000  # limit NLE max steps (default 100000)
+    #   skip_more: true
+    # minihack:
+    #   max_episode_steps: 50    # limit MiniHack steps (default 100)
+    crafter:
+      max_episode_steps: 50   # limit Crafter steps (default 2000)
+    # textworld:
+    #   max_episode_steps: 40    # limit TextWorld steps (default 80)
+    #   textworld_games_path: "./domains/balrog/tw_games"

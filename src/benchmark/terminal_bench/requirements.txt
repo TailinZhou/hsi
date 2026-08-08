@@ -1,0 +1,10 @@
+# Terminal-Bench 2 Dependencies (optional)
+# Install: pip install -r src/benchmark/terminal_bench/requirements.txt
+
+# LLM calls inside Harbor subprocess (GodelAgentProxy)
+litellm>=1.82.0
+
+# Harbor CLI — runs tasks in Runloop/Docker sandboxes
+# Install via: pip install harbor
+harbor
+nest_asyncio

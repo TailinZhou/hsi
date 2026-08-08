@@ -1,0 +1,105 @@
+# AgentDojo Benchmark Configuration
+# Usage: cp benchmark_config_goal/agentdojo/config.yaml config.yaml && python main.py
+
+llm:
+  model: "deepseek-v4-flash"
+  # model: "gpt-5.4-mini-2026-03-17"
+  # model: "gpt-4.1-mini"
+  # model: "qwen/qwen3.6-35b-a3b"
+  # model: "qwen36-fast"
+  # model: "GLM-4.7"
+  # model: "GLM-4.5-Air"
+  temperature: 0.0
+  thinking_enabled: true            # true enables thinking mode, false disables
+  reasoning_effort: "max"         # thinking effort: "high", "max"
+
+evolution:
+  lcb_zscore: 0.5  # LCB (lower confidence bound) z-score: larger is more conservative, penalizes unstable reward estimates; 0 = degrades to raw mean
+  max_iterations: 5           # number of evolution iterations
+  max_steps_per_iteration: 80    # max steps per iteration
+  enable_bash: true
+  max_context_tokens: 600000
+  max_history_messages: 500
+  max_tool_result_length: 100000
+  evaluate_llm_summary: true
+  evaluate_consolidate_summary: false
+  init_eval_enabled: false  # run a dev evaluation of the init harness before evolution (produces experience text + true baseline reward); false=skip, iteration-1 cold start
+  enable_file_log: true
+  exclude_tools:
+    - read_history_self
+    - get_historic_version
+    - view_evolution_graph
+    - get_historic_eval_code
+    # - bootstrap
+
+harness:
+  enable_bash: false
+  temperature: 0  # LLM temperature during harness/evaluate phase (follows llm.temperature if unset)
+  thinking_enabled: false  # thinking mode during harness/evaluate phase (follows llm.thinking_enabled if unset)
+
+init:
+  godel_harness_init_path: "./godel_harness_init/agentdojo"
+  godel_evolution_init_path: "./godel_evolution_init"
+
+meta_evolve:
+  enabled: true
+  max_steps: 50
+  enable_bash: true
+  archive_strategy: "greedy"
+  inject_seed_hypothesis: true
+  seed_eval_enabled: true
+  seed_eval_max_calls: 2
+  # archive_strategy: "crossover"
+  evolvable_commit_strategy: true
+  commit_nudge_max_steps: 50
+  seed_selection_max_steps: 50
+  # Submit-best -- fixed, non-evolvable agentic final-best selection stage
+  submit_best_enabled: true
+  submit_best_max_steps: 50
+
+output:
+  directory: "./evolution_results/agentdojo"
+  verbose: true
+
+# ============================================================
+# Benchmark common configuration
+# ============================================================
+benchmark:
+  type: "agentdojo"
+
+  # suite: select environments to test, hyphen-separated, or "all" for everything
+  #   "workspace"  → workspace scenarios (calendar, email, file management, etc.)
+  #   "slack"      → Slack instant messaging scenarios
+  #   "banking"    → banking and financial scenarios
+  #   "travel"     → travel booking scenarios
+  #   "all"        → all 4 scenarios
+  suite: "all"
+
+  # attack: injection attack type, used for security evaluation
+  #   "important_instructions"  → important instruction injection
+  #   "tool_knowledge"          → tool knowledge injection
+  #   "direct"                  → direct prompt injection
+  #   "dos"                     → denial-of-service attack
+  attack: "dos"
+
+  # categories: evaluation dimensions, can select multiple at once
+  #   "utility"   → functional correctness (whether the agent completed the user task)
+  #   "security"  → security (whether the agent resisted the injection attack)
+  categories: ["utility", "security"]
+
+  # max_tasks_per_category: per-category task cap for dev/val sets (null=all)
+  # e.g. setting to 2 runs only 2 tasks for utility and security each, suitable for quick debugging
+  max_tasks_per_category: 50
+  # max_tasks_per_category_test: per-category task cap for test set (null=all, independent of dev/val)
+  max_tasks_per_category_test: null
+
+  verbose: false                  # print detailed evaluation interaction logs
+  dev_ratio: 0.8                  # 1.0 = all for dev, no test set split
+  split_seed: 24                  # random seed, ensures dev/test split is reproducible
+  val_ratio: 0.4                  # ratio of val split out of dev
+  mode: "batch"                   # evaluation mode (currently only "batch" supported)
+  dynamic_sample: true            # true=resample dev on each evaluate (val/test fixed in advance), false=dev/val/test all fixed
+  parallel_workers: 50             # number of parallel evaluation threads (1=sequential, default)
+  run_all_tasks: false           # run full evaluation (dev+val+test) after evolution; default false only runs test set
+  summary_passed_samples: 0       # number of correct tasks sampled in the eval summary (0=summarize only failed tasks)
+  test_repeats: 3   # increase to run more times; set to 1 for debugging

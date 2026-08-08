@@ -1,0 +1,157 @@
+# Terminal-Bench 2 Configuration
+# Usage: cp benchmark_config_goal/terminal_bench/config.yaml config.yaml && python main.py
+#
+# Harbor and Runloop sandboxes are used to run evaluations. Install dependencies first:
+#   pip install -r src/benchmark/terminal_bench/requirements.txt
+
+llm:
+  model: "deepseek-v4-flash"
+  # model: "GLM-4.7"
+  temperature: 0.0
+  thinking_enabled: true            # true enables thinking mode, false disables
+  reasoning_effort: "max"         # thinking effort: "high", "max"
+
+evolution:
+  lcb_zscore: 0.5  # LCB (lower confidence bound) z-score: larger is more conservative, penalizes unstable reward estimates; 0 = degrades to raw mean
+  max_iterations: 5           # number of evolution iterations
+  max_steps_per_iteration: 80    # max steps per iteration
+  enable_bash: true
+  max_context_tokens: 600000
+  max_history_messages: 500
+  max_tool_result_length: 100000
+  evaluate_llm_summary: true
+  evaluate_consolidate_summary: false
+  init_eval_enabled: false  # run a dev evaluation of the init harness before evolution (produces experience text + true baseline reward); false=skip, iteration-1 cold start
+  enable_file_log: true
+  exclude_tools:
+    - read_history_self
+    - get_historic_version
+    - view_evolution_graph
+    - get_historic_eval_code
+    # - bootstrap
+
+harness:
+  enable_bash: false
+  temperature: 0.0  # LLM temperature during harness/evaluate phase (follows llm.temperature if unset)
+  thinking_enabled: false  # thinking mode during harness/evaluate phase (follows llm.thinking_enabled if unset)
+
+init:
+  godel_harness_init_path: "./godel_harness_init/terminal_bench"
+  godel_evolution_init_path: "./godel_evolution_init"
+
+meta_evolve:
+  enabled: true
+  max_steps: 50
+  enable_bash: true
+  archive_enabled: true
+  archive_strategy: "greedy"
+  inject_seed_hypothesis: true
+  seed_eval_enabled: true
+  seed_eval_max_calls: 2
+  evolvable_commit_strategy: true
+  commit_nudge_max_steps: 50
+  seed_selection_max_steps: 50
+  # Submit-best -- fixed, non-evolvable agentic final-best selection stage
+  submit_best_enabled: true
+  submit_best_max_steps: 50
+
+output:
+  directory: "./evolution_results/terminal_bench"
+  verbose: true
+
+# ============================================================
+# Benchmark common configuration
+# ============================================================
+benchmark:
+  type: "terminal_bench"
+
+  # suite: select the task subset to test
+  #   "all"           → all 89 tasks
+  #   "system_admin"  → system administration (12 tasks)
+  #   "software_eng"  → software engineering (22 tasks)
+  #   "data_science"  → data science (13 tasks)
+  #   "security"      → security (10 tasks)
+  #   "ml_ai"         → machine learning (14 tasks)
+  #   "debugging"     → debugging (5 tasks)
+  #   "scientific"    → scientific computing (13 tasks)
+  #   can also be combined with commas: "system_admin,security"
+  #   or specify task_id directly: "extract-elf,fix-git,db-wal-recovery"
+  suite: "debugging"
+
+  # max_tasks_per_category: per-category cap for dev/val sets (null=all)
+  # e.g. setting to 2 runs only 2 tasks per category, suitable for quick debugging
+  max_tasks_per_category: null
+  # max_tasks_per_category_test: per-category cap for test set (null=all, independent of dev/val)
+  max_tasks_per_category_test: null
+
+  verbose: false
+  dev_ratio: 1.0
+  split_seed: 42
+  val_ratio: 0.25
+  mode: "batch"
+  dynamic_sample: true            # true=resample dev on each evaluate (val/test fixed in advance), false=dev/val/test all fixed
+  run_all_tasks: true           # run full evaluation (dev+val+test) after evolution; default false only runs test set
+  test_repeats: 3  # increase to run more times; set to 1 for debugging
+
+# ============================================================
+# Terminal-Bench 2 specific configuration
+# These parameters are read by TerminalBenchConfig.from_benchmark_config()
+# Can also be overridden via environment variables
+# ============================================================
+terminal_bench:
+
+  # Harbor CLI path (null=auto-detect harbor in PATH)
+  harbor_executable: null
+
+  # Harbor dataset identifier
+  dataset: "terminal-bench@2.0"
+
+  # ── Sandbox configuration ──────────────────────────────────────────────
+  # "docker":    local Docker (default, requires Docker installed on the host)
+  # "runloop":   remote Runloop sandbox (requires RUNLOOP_API_KEY)
+  # "daytona":   Daytona cloud sandbox (requires DAYTONA_API_KEY)
+  # "e2b":       E2B sandbox (requires E2B_API_KEY)
+  # "modal":     Modal cloud (requires MODAL configuration)
+  # Docker is the default, requires no extra configuration as long as Docker is present on the host
+  sandbox: "docker"
+
+  # ── litellm LLM configuration (model used inside the Harbor subprocess) ─────────
+  # GodelAgentProxy calls this model via litellm inside the Harbor subprocess
+  # Fully independent of the main-process GodelAgent LLM
+
+  # Model name, format follows litellm convention
+  #   OpenAI:      "openai/gpt-4o"
+  #   Anthropic:   "anthropic/claude-sonnet-4-20250514"
+  #   GLM (Zhipu): "openai/GLM-4.7"  (requires api_base)
+  #   Custom:      "openai/<your-model>" (requires api_base)
+  # Can be overridden via TB2_LITELLM_MODEL environment variable
+  litellm_model: "openai/deepseek-v4-flash"
+
+  # API endpoint (must be set when not using official OpenAI)
+  # GLM Zhipu: "https://open.bigmodel.cn/api/paas/v4"
+  # Can be overridden via TB2_LITELLM_API_BASE environment variable
+  litellm_api_base: "https://api.deepseek.com/v1"
+
+  # API Key (null=read OPENAI_API_KEY environment variable)
+  # Recommend setting via environment variable, do not write it in the yaml:
+  #   export TB2_LITELLM_API_KEY="your-key-here"
+  # or export OPENAI_API_KEY="your-key-here" (fallback)
+  litellm_api_key: null
+
+  # ── Harbor runtime parameters ──────────────────────────────────────
+  # Number of concurrent tasks
+  max_concurrent: 7
+
+  # Single task timeout (seconds)
+  # task_timeout: 600
+
+  # Agent setup timeout multiplier (increase when WSL2 Docker is slow)
+  # Default 360s × multiplier
+  agent_setup_timeout_multiplier: 3.0
+
+  # Environment build timeout multiplier (increase when WSL2 Docker is slow)
+  # Default determined by the task's environment.build_timeout_sec
+  environment_build_timeout_multiplier: 3.0
+
+  # Total timeout for the entire Harbor run (seconds)
+  # overall_timeout: 3600

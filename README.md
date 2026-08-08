@@ -1,7 +1,5 @@
 # HSI — Hierarchical Self-Improvement Agent Harness
 
-**Tailin Zhou** · HKUST · `tzhouaq@connect.ust.hk`
-
 HSI is a framework in which a single frozen LLM $M$ operates across three layered scopes — **task harness**, **evolver**, and **meta-evolver** — to rewrite its own harness code, the strategy that governs the rewriting, and the selector that exports the final deployed version. The meta-evolver's own execution logic is frozen as an outer anchor, localizing self-modification to layered, empirically validated edits rather than unrestricted self-reference. A thinking-on/off design isolates the harness contribution: thinking is disabled at task time to cap the model's per-step ceiling, and enabled when rewriting the harness to give self-modification its best chance.
 
 On BALROG with DeepSeek-V4-Flash as the frozen backbone, HSI yields consistent in-distribution gains over the init-harness baseline on moderate-difficulty tasks (**+39.3** on BabyAI, **+33.0** on Crafter, **+25.0** on TextWorld, **+15.0** on MiniHack, all in raw % Progress), surpassing several frontier models on TextWorld (Grok-4, Claude-Opus-4.5-Thinking, Gemini-3-Flash) and Crafter (DeepSeek-R1, GPT-5-minimal-think, GPT-4o) despite a smaller backbone, and shows clean held-out generalization on easier BabaIsAI sub-suites (**0.98** best-test on BreakStop, **1.00** on GoTo from a 20% unseen split). On tasks beyond the backbone's reach (NLE), no harness redesign closes the gap.
@@ -13,26 +11,32 @@ On BALROG with DeepSeek-V4-Flash as the frozen backbone, HSI yields consistent i
 | LLM | BabyAI | Crafter | TextWorld | MiniHack | NLE | Avg |
 |---|---|---|---|---|---|---|
 | Gemini-3-Pro | 96.0 ± 2.8 | 57.3 ± 4.4 | 60.2 ± 7.5 | 40.0 ± 7.7 | 6.8 ± 3.2 | 52.1 ± 5.1 |
-| Grok-4 | 76.0 ± 6.0 | 57.3 ± 3.9 | 62.9 ± 7.9 | 17.5 ± 6.0 | 1.8 ± 0.8 | 43.1 ± 4.9 |
-| Claude-Opus-4.5-Thinking | 72.0 ± 6.3 | 48.6 ± 3.2 | 59.0 ± 8.0 | 30.0 ± 7.2 | 2.4 ± 0.3 | 42.4 ± 5.0 |
+| Gemini-3.1-Pro-Thinking | 98.0 ± 2.0 | 55.0 ± 6.4 | 75.7 ± 6.4 | 27.5 ± 7.1 | 2.6 ± 0.3 | 51.8 ± 4.4 |
+| Gemini-3.1-Pro | 100.0 ± 0.0 | 46.8 ± 4.2 | 66.5 ± 7.5 | 35.0 ± 7.5 | 3.0 ± 0.5 | 50.3 ± 3.9 |
 | Gemini-3-Flash | 86.0 ± 4.9 | 45.0 ± 6.3 | 50.2 ± 8.1 | 30.0 ± 7.2 | 4.0 ± 0.8 | 43.0 ± 5.5 |
+| Grok-4 | 76.0 ± 6.0 | 57.3 ± 3.9 | 62.9 ± 7.9 | 17.5 ± 6.0 | 1.8 ± 0.8 | 43.1 ± 4.9 |
+| Claude-Opus-4.5 | 80.0 ± 5.7 | 49.5 ± 3.1 | 51.4 ± 8.4 | 27.5 ± 7.1 | 2.0 ± 0.5 | 42.1 ± 5.0 |
+| Claude-Opus-4.5-Thinking | 72.0 ± 6.3 | 48.6 ± 3.2 | 59.0 ± 8.0 | 30.0 ± 7.2 | 2.4 ± 0.3 | 42.4 ± 5.0 |
+| Gemini-2.5-Pro-Exp-03-25 | 80.0 ± 5.7 | 55.0 ± 6.0 | 49.2 ± 8.2 | 17.5 ± 6.0 | 1.7 ± 0.2 | 40.7 ± 5.2 |
 | DeepSeek-R1 | 74.0 ± 6.2 | 36.4 ± 3.8 | 21.8 ± 6.1 | 25.0 ± 6.8 | 1.4 ± 0.5 | 31.7 ± 4.7 |
 | GPT-5-minimal-think | 80.0 ± 5.7 | 39.1 ± 4.1 | 30.6 ± 7.0 | 20.0 ± 7.3 | 1.3 ± 0.5 | 34.2 ± 4.9 |
+| Claude-3.5-Sonnet | 68.0 ± 6.6 | 32.7 ± 3.2 | 42.1 ± 5.4 | 15.0 ± 5.6 | 0.6 ± 0.5 | 31.7 ± 4.3 |
 | GPT-4o | 77.6 ± 3.7 | 33.1 ± 2.3 | 39.3 ± 5.2 | 10.0 ± 4.7 | 0.4 ± 0.4 | 32.1 ± 3.3 |
-| **DS-V4-Flash (Init harness)** | 42.0 ± 3.5 | 11.6 ± 5.0 | 40.0 ± 6.2 | 0.8 ± 1.9 | 0.0 | 18.9 ± 3.3 |
-| **DS-V4-Flash w. HSI (meta-off)** | 77.3 ± 1.2 | 36.4 ± 1.6 | 46.0 ± 2.4 | 5.8 ± 3.8 | 0.0 | 33.1 ± 1.8 |
+| DS-V4-Flash (Init harness) | 42.0 ± 3.5 | 11.6 ± 5.0 | 40.0 ± 6.2 | 0.8 ± 1.9 | 0.0 | 18.9 ± 3.3 |
+| DS-V4-Flash w. HSI (meta-off) | 77.3 ± 1.2 | 36.4 ± 1.6 | 46.0 ± 2.4 | 5.8 ± 3.8 | 0.0 | 33.1 ± 1.8 |
 | **DS-V4-Flash w. HSI (meta-on)** | **81.3 ± 4.2** | **44.6 ± 3.2** | **65.0 ± 3.0** | **15.8 ± 2.9** | **0.2 ± 0.3** | **41.4 ± 2.7** |
 
-Leaderboard numbers (retrieved 2026-08-03) reported as % Progress [Paglieri et al., 2025]. HSI rows use a single frozen DeepSeek-V4-Flash backbone.
+Leaderboard numbers (retrieved 2026-08-03) reported as % Progress [Paglieri et al., 2025]. The bottom three rows isolate the contribution of the hot-swappable task harness using a single frozen DeepSeek-V4-Flash backbone. BabaIsAI is omitted because our sub-suite protocol differs from the leaderboard's mixed-task protocol. Avg is the unweighted mean across the five environments.
 
 ### Setup B — Held-out (sub-suite split, 20% unseen)
 
-| Sub-suite | Init (best-test) | HSI (best-test) |
-|---|---|---|
-| BreakStop | 0.90 | **0.98** |
-| GoTo | 0.93 | **1.00** |
+| Sub-suite | Init Harness | Best Dev | Best Test (meta-on) | Best Test (meta-off) |
+|---|---|---|---|---|
+| BreakStop | 0.0333 ± 0.0334 | 1.0000 | 0.9800 ± 0.0632 | 1.0000 ± 0.0000 |
+| GoTo | 0.1818 ± 0.0802 | 1.0000 | 1.0000 ± 0.0000 | 0.9636 ± 0.0809 |
+| Make | 0.0000 | 0.5556 | 0.3625 ± 0.3284 | 0.3375 ± 0.2029 |
 
-Clean held-out generalization on unseen tasks within the same task family.
+Init Harness is sliced from three full-BabaIsAI no-think baseline runs (mean ± std across runs). Best Dev is the highest dev reward in the selected meta-on run. Test rewards are reported as mean ± across-task std of per-task progressions.
 
 ## Pipeline
 

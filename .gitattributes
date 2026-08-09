@@ -1,0 +1,4 @@
+# TextWorld game data — not Inform 7 source
+src/benchmark/balrog/tw_games/** linguist-vendored
+src/benchmark/balrog/tw_games/**/*.ni linguist-language=TextWorld
+src/benchmark/balrog/tw_games/**/*.z8 -linguist-detectable

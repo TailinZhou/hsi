@@ -4,6 +4,10 @@ HSI is a framework in which a single frozen LLM $M$ operates across three layere
 
 On BALROG with DeepSeek-V4-Flash as the frozen backbone, HSI yields consistent in-distribution gains over the init-harness baseline on moderate-difficulty tasks (**+39.3** on BabyAI, **+33.0** on Crafter, **+25.0** on TextWorld, **+15.0** on MiniHack, all in raw % Progress), surpassing several frontier models on TextWorld (Grok-4, Claude-Opus-4.5-Thinking, Gemini-3-Flash) and Crafter (DeepSeek-R1, GPT-5-minimal-think, GPT-4o) despite a smaller backbone, and shows clean held-out generalization on easier BabaIsAI sub-suites (**0.98** best-test on BreakStop, **1.00** on GoTo from a 20% unseen split). On tasks beyond the backbone's reach (NLE), no harness redesign closes the gap.
 
+![HSI Framework](paper/figure1_design.png)
+
+*Figure 1: The HSI framework. A single frozen LLM $M$ operates across three layered scopes with disjoint editable surfaces: the task-harness scope (executing $H$ on the environment), the evolver scope (rewriting $H$ through seed selection, main evolution, and commit selection), and the meta-evolver scope (rewriting the evolver strategy $\Sigma$ through meta-evolution, plus the terminal best-version selection stage).*
+
 ## Results
 
 ### Setup A — In-distribution (resampled-seed, full-suite evolution)

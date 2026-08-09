@@ -1,4 +1,4 @@
-# HSI — Hierarchical Self-Improvement Agent Harness
+# Hierarchical Self-Improvement: A Framework for Task-Specific Evolvable Agent Harnesses
 
 HSI is a framework in which a single frozen LLM $M$ operates across three layered scopes — **task harness**, **evolver**, and **meta-evolver** — to rewrite its own harness code, the strategy that governs the rewriting, and the selector that exports the final deployed version. The meta-evolver's own execution logic is frozen as an outer anchor, localizing self-modification to layered, empirically validated edits rather than unrestricted self-reference. A thinking-on/off design isolates the harness contribution: thinking is disabled at task time to cap the model's per-step ceiling, and enabled when rewriting the harness to give self-modification its best chance.
 

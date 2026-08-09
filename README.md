@@ -180,14 +180,25 @@ evolution_results/<suite>/run_<timestamp>/
 
 ## Citation
 
+If you use HSI in your research, please cite the paper and the repository:
+
 ```bibtex
-@article{zhou2026hsi,
-  title={Hierarchical Self-Improvement Agent Harness},
+@misc{zhou2026hsi,
+  title={Hierarchical Self-Improvement: A Framework for Task-Specific Evolvable Agent Harnesses},
   author={Zhou, Tailin},
-  journal={NeurIPS},
-  year={2026}
+  year={2026},
+  note={arXiv preprint, arXiv:XXXX.XXXXX}
+}
+
+@misc{zhou2026hsi-code,
+  title={HSI: Hierarchical Self-Improvement Agent Harness},
+  author={Zhou, Tailin},
+  year={2026},
+  howpublished={\url{https://github.com/TailinZhou/hsi}}
 }
 ```
+
+> `arXiv:XXXX.XXXXX` will be updated once the preprint is available.
 
 ## License
 

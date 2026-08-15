@@ -187,7 +187,7 @@ If you use HSI in your research, please cite the paper and the repository:
   title={Hierarchical Self-Improvement: A Framework for Task-Specific Evolvable Agent Harnesses},
   author={Zhou, Tailin},
   year={2026},
-  note={arXiv preprint, arXiv:XXXX.XXXXX}
+  note={arXiv preprint arXiv:2608.08466}
 }
 
 @misc{zhou2026hsi-code,

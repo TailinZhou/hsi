@@ -9,6 +9,7 @@ __pycache__/
 
 # Evolution outputs
 evolution_results/
+final_results/
 
 # OS
 .DS_Store

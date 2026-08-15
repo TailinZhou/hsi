@@ -198,8 +198,6 @@ If you use HSI in your research, please cite the paper and the repository:
 }
 ```
 
-> `arXiv:XXXX.XXXXX` will be updated once the preprint is available.
-
 ## License
 
 MIT
